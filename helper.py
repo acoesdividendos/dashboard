@@ -7,9 +7,9 @@ import requests
 import plotly.graph_objects as go
 import datetime
 
-def setPageConfig():
+def setPageConfig(pageName='Dashboard'):
     st.set_page_config(
-   page_title="Dashboard",
+   page_title=pageName,
    page_icon="💰",
    layout="wide",
    initial_sidebar_state="collapsed",
@@ -59,33 +59,36 @@ def createCanvaForTicker(index):
                             margin-top: 0;'>{price}</style></span></p>"""
                             
 
-def createTable(dataframe):
+def createTable(dataframe, fontSize='25px', fontFamily='Arial Rounded MT Bold', width='430px', padding='1px 25px', coloring=True):
     hide_table_row_index = """
                         <style>
-                        table {margin-top: -2rem}
+                        table {margin-top: -2rem; width: %s;}
                         thead tr th:first-child {display:none}
                         thead tr {border-top: none !important}
                         tbody th {display:none}
                         tbody tr {border-top: none !important}
                         </style>
-                        """
+                        """ % (width)
 
     st.markdown(hide_table_row_index, unsafe_allow_html=True)
-    th_props = [('font-size', '25px'),
+    th_props = [('font-size', fontSize),
     ('text-align', 'center'),
     ('border', '0 !important'),
     ('font-weight', 'bold'),
     ('color', 'rgb(255,255,255)')]
                                     
-    td_props = [('font-size', '25px'),
+    td_props = [('font-size', fontSize),
     ('border', '0 !important'),
     ('font-weight', 'bold'),
-    ('font-family', 'Arial Rounded MT Bold'), ('outline', 'none'), ('padding', '1px 25px')]
+    ('font-family', fontFamily), ('outline', 'none'), ('padding', padding)]
                                             
     styles = [dict(selector="th", props=th_props),
     dict(selector="td", props=td_props)]
 
-    df2=dataframe.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles).apply(upOrDown,axis=1)
+    if coloring:
+        df2=dataframe.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles).apply(upOrDown,axis=1)
+    else:
+        df2=dataframe.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
     st.write(df2.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 def upOrDown(data, upColor='rgb(54,171,56)', downColor='rgb(200,14,14)'):
@@ -102,7 +105,6 @@ def getCNBCPrices(etf):
             change = etf['ExtendedMktQuote']['change_pct']
             if change == "UNCH":
                 change = "0.00%"
-                print({'symbol': getTickerForName(etf['shortName']), 'price': float(etf['ExtendedMktQuote']['last'].replace(',','')), 'change': change})
             return {'symbol': getTickerForName(etf['shortName']), 'price': float(etf['ExtendedMktQuote']['last'].replace(',','')), 'change': change}
         else:
             change = etf['change_pct']
@@ -172,7 +174,7 @@ def rederGauge(text, value, format, min, max, split, lowerRange, higherRange, ke
 def getInlfuxQuery(query, cookie):
     seconds_since_epoch = datetime.datetime.now().timestamp()
     timeForQuery = round((seconds_since_epoch * 1000) - 18000 * 1000)
-    url = 'http://192.168.0.15:3000/api/datasources/proxy/8/query?db=influx&q=' + query + '%20%3E%3D%20' + str(timeForQuery) + 'ms&epoch=ms'
+    url = 'http://192.168.0.15:3000/api/datasources/proxy/1/query?db=influx&q=' + query + '%20%3E%3D%20' + str(timeForQuery) + 'ms&epoch=ms'
     response = requests.get(url, headers={'Cookie': cookie}).json()
     value = response['results'][0]['series'][0]['values'][len(response['results'][0]['series'][0]['values']) - 1][1]
     if not value:
@@ -213,12 +215,20 @@ def rederAreaChart(dataf, cookie):
     st.plotly_chart(fig)
 
 
-def createChart(dataf, title):
+def createChart(dataf, title, width=640, height=449, titleColor="rgb(255,255,255)", titleFonteSize=25):
     dataf.reset_index(inplace=True)
     dataf = dataf.rename(columns = {'index':'timestamp'})
     dataf = dataf.rename(columns={'timestamp': 'time'})
-    fig = px.line(dataf, x="time", y="close", title=title, width=640, height=449)
-    fig.update_layout(margin=dict(l=10, r=10, t=50, b=0), paper_bgcolor="rgb(0,0,0)", title_font_family='Arial Rounded MT Bold', plot_bgcolor="rgb(0,0,0)", font_color="rgb(255,255,255)", xaxis=dict(showgrid=False, linecolor="rgba(255,255,255, 0.5)", showline=True, tickfont = dict(size=14)), yaxis=dict(showgrid=True, showline=True, linecolor="rgba(255,255,255, 0.5)", gridcolor="rgba(255,255,255, 0.2)", tickfont = dict(size=14)), yaxis_tickformat = '$', font_family="Arial Rounded MT Bold", yaxis_title=None, xaxis_title=None, xaxis_tickformat = '%b-%Y', title_font_size=25, title={'text': title,'y':0.94,'x':0.5,'xanchor': 'center','yanchor': 'top'})
+    fig = px.line(dataf, x="time", y="close", title=title, width=width, height=height)
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=0), paper_bgcolor="rgb(0,0,0)", title_font_family='Arial Rounded MT Bold', plot_bgcolor="rgb(0,0,0)", font_color="rgb(255,255,255)", title_font_color=titleColor,  xaxis=dict(showgrid=False, linecolor="rgba(255,255,255, 0.5)", showline=True, tickfont = dict(size=14)), yaxis=dict(showgrid=True, showline=True, linecolor="rgba(255,255,255, 0.5)", gridcolor="rgba(255,255,255, 0.2)", tickfont = dict(size=14)), yaxis_tickformat = '$', font_family="Arial Rounded MT Bold", yaxis_title=None, xaxis_title=None, xaxis_tickformat = '%b-%Y', title_font_size=titleFonteSize, title={'text': title,'y':0.94,'x':0.5,'xanchor': 'center','yanchor': 'top'})
+    fig.data[0].line.color = "#d76c21"
+    fig.data[0].line.width = 2
+    st.plotly_chart(fig)
+
+
+def createChartEconomy(dataf, title, width=640, height=449, titleColor="rgb(255,255,255)", titleFonteSize=25, yFormat='$'):
+    fig = px.line(dataf, x="time", y="close", title=title, width=width, height=height)
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=0), paper_bgcolor="rgb(0,0,0)", title_font_family='Arial Rounded MT Bold', plot_bgcolor="rgb(0,0,0)", font_color="rgb(255,255,255)", title_font_color=titleColor,  xaxis=dict(showgrid=False, linecolor="rgba(255,255,255, 0.5)", showline=True, tickfont = dict(size=14)), yaxis=dict(showgrid=True, showline=True, linecolor="rgba(255,255,255, 0.5)", gridcolor="rgba(255,255,255, 0.2)", tickfont = dict(size=14)), yaxis_tickformat = yFormat, font_family="Arial Rounded MT Bold", yaxis_title=None, xaxis_title=None, xaxis_tickformat = '%b-%Y', title_font_size=titleFonteSize, title={'text': title,'y':0.94,'x':0.5,'xanchor': 'center','yanchor': 'top'})
     fig.data[0].line.color = "#d76c21"
     fig.data[0].line.width = 2
     st.plotly_chart(fig)
@@ -250,3 +260,42 @@ def time_in_range():
     end = datetime.time(21, 0, 0)
     current = datetime.datetime.now().time()
     return start <= current <= end
+
+
+def rederGaugeFear(text, value, format, min, max, split, key):
+    color = 'rgb(255, 152, 48)'
+    if float(value) < 25:
+        color = '#ff0000'
+    if float(value) > 25 and float(value) < 45:
+        color = 'rgb(255, 62, 62)'
+    if float(value) > 45 and float(value) < 55:
+        color = '#ffc624'
+    if float(value) > 55 and float(value) < 75:
+        color = 'rgb(115, 191, 105)'
+    if float(value) > 75:
+        color = 'rgb(9, 171, 59)'
+    option = {
+    'series': [{
+      'type': 'gauge',
+      'center': ['50%', '70%'],
+      'startAngle': 180,
+      'endAngle': 0,
+      'min': min,
+      'max': max,
+      'splitNumber': split,
+      'itemStyle': {'color': color},
+      'progress': {'show': True,'width': 15},
+      'pointer': {'show': False},
+      'axisLine': {'lineStyle': {  'width': 15}},
+      'axisTick': {'distance': -25,'splitNumber': 5,'lineStyle': {  'width': 1,  'color': '#999'}},
+      'splitLine': {'distance': -32,'length': 14,'lineStyle': {  'width': 2,  'color': '#999'}},
+      'axisLabel': {'distance': -18,'color': '#999','fontSize': 12},
+      'anchor': {'show': False},
+      'title': {'show': False},
+      'detail': {'valueAnimation': True,'width': '100%','lineHeight': 15,'borderRadius': 8,'offsetCenter': [0, '-15%'],'fontSize': 24,'fontWeight': 'bolder','formatter': value + format,'color': color},
+      'data': [{'value': value}
+      ]}]
+    }
+
+    st_echarts(option, height="180px", width='210px', key=key, renderer='canva')
+    return st.markdown(f"<p style='text-align: center; width:210px; margin-top: -65px;'><span style='text-align: center; font-size: 20px; margin-top: 0;'>{text}</style></span>", unsafe_allow_html=True)

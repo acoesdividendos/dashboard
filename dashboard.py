@@ -7,7 +7,7 @@ import helper
 from streamlit_autorefresh import st_autorefresh
 
 
-influxCoockie = 'influxdb-oss-session=R_ywq0fgBLDkTTNr5e-iOFteReHuXIGBMxOUN9Yc4dScLCq4Fb8eTWPsj3VzYQl77ZRGLWu-pPXmSNaUUn7bQg==; PHPSESSID=s9kc4evui3hogtas2ngipni5n7; _pk_id.1.0e2b=ed6cf3ec48bfd1c5.1670520315.; grafana_session=c3bb9e6cf9bc370b35cd1a07abf8f762'
+influxCoockie = '_pk_id.1.5336=b71512efe30a90c0.1671653720.; _pk_ses.1.5336=1; grafana_session=447786de724042161f11d364216bd5f8'
 helper.setPageConfig()
 wb = webull()
 col1, col2, col3, col4, col5, col6, col7, col8, col9= st.columns([4, 4, 4, 4, 4, 3, 3, 3, 3], gap='medium')
@@ -76,6 +76,7 @@ def insertGauges():
         helper.rederGauge('Sys Load (15m avg)','{:0,.2f}'.format(sysLoad), '%', 0, 100, 10, 50, 80, 'cpu_usage3')
         helper.createWattSpan(production, 'Production')
         helper.createWattSpan(consumption, 'Consumption')
+
 
 def insertCanvasForTikers(tickerArray):
     spyTicker = 'SPY'

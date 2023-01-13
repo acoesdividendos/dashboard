@@ -29,17 +29,22 @@ def setPageConfig(pageName='Dashboard'):
         unsafe_allow_html=True
     )
 
-def createCanvaForTicker(index):
-    ticker = index['symbol']
+def createCanvaForTicker(tickerArray, symbol):
+    try:
+        index = [x for x in tickerArray if x["symbol"] == symbol ][0]
+    except:
+        index = {'symbol': '', 'price': 0, 'change': '0'}
+    ticker = index['symbol'].replace("-YR", 'Y').replace(" ", "")
     price = '${:0,.2f}'.format(index['price'])
     if ticker == 'EUR' or ticker == 'AUD' or ticker == 'CAD' or ticker == 'GBP' or ticker == 'JPY':
         price = '${:0,.4f}'.format(index['price'])
     change = index['change']
     wch_colour_box = (25, 74, 25)
-    if float(change.replace('%', '')) < 0:
-        wch_colour_box = (148, 25, 25)
+    if change != '':
+        if float(change.replace('%', '')) < 0:
+            wch_colour_box = (148, 25, 25)
+        change = '{:0,.2f}%'.format(float(change.replace('%', '')))
     wch_colour_font = (255, 255, 255)
-    change = '{:0,.2f}%'.format(float(change.replace('%', '')))
 
     return f"""<p style='background-color: rgb({wch_colour_box[0]}, 
                                                 {wch_colour_box[1]}, 
@@ -53,16 +58,49 @@ def createCanvaForTicker(index):
                             border-radius: 30px; 
                             padding-top: 18px; 
                             padding-bottom: 18px; 
-                            line-height:71px;'>
+                            line-height:77px;'>
                             {ticker}&nbsp;&nbsp;{change}
                             </style><BR><span style='font-size: 35px; 
                             margin-top: 0;'>{price}</style></span></p>"""
                             
 
-def createTable(dataframe, fontSize='25px', fontFamily='Arial Rounded MT Bold', width='430px', padding='1px 25px', coloring=True):
+def createTable(dataframe, fontSize='25px', fontFamily='Arial Rounded MT Bold', width='481px', padding='1px 5px', coloring=True):
     hide_table_row_index = """
                         <style>
-                        table {margin-top: -2rem; width: %s;}
+                        table {margin-top: -29rem; width: %s;}
+                        thead tr th:first-child {display:none}
+                        thead tr {border-top: none !important}
+                        tbody th {display:none}
+                        tbody tr {border-top: none !important}
+                        </style>
+                        """ % (width)
+
+    st.markdown(hide_table_row_index, unsafe_allow_html=True)
+    th_props = [('font-size', fontSize),
+    ('text-align', 'center'),
+    ('border', '0 !important'),
+    ('font-weight', 'bold'),
+    ('color', 'rgb(255,255,255)')]
+                                    
+    td_props = [('font-size', fontSize),
+    ('border', '0 !important'),
+    ('font-weight', 'bold'),
+    ('font-family', fontFamily), ('outline', 'none'), ('padding', padding)]
+                                            
+    styles = [dict(selector="th", props=th_props),
+    dict(selector="td", props=td_props)]
+
+    if coloring:
+        df2=dataframe.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles).apply(upOrDown,axis=1)
+    else:
+        df2=dataframe.style.set_properties(**{'text-align': 'center'}).set_table_styles(styles)
+    st.write(df2.to_html(escape=False, index=False), unsafe_allow_html=True)
+
+
+def createTableEconomicTable(dataframe, fontSize='25px', fontFamily='Arial Rounded MT Bold', width='481px', padding='1px 25px', coloring=True):
+    hide_table_row_index = """
+                        <style>
+                        table {margin-top: -29rem; margin-left: -7rem; width: %s important;}
                         thead tr th:first-child {display:none}
                         thead tr {border-top: none !important}
                         tbody th {display:none}
@@ -105,16 +143,16 @@ def getCNBCPrices(etf):
             change = etf['ExtendedMktQuote']['change_pct']
             if change == "UNCH":
                 change = "0.00%"
-            return {'symbol': getTickerForName(etf['shortName']), 'price': float(etf['ExtendedMktQuote']['last'].replace(',','')), 'change': change}
+            return {'symbol': getTickerForName(etf['shortName'], etf['symbol']), 'price': float(etf['ExtendedMktQuote']['last'].replace(',','').replace("%", "")), 'change': change}
         else:
             change = etf['change_pct']
             if change == "UNCH":
                 change = "0.00%"
-            return {'symbol': getTickerForName(etf['shortName']), 'price': float(etf['last'].replace(',','')), 'change': change}
+            return {'symbol': getTickerForName(etf['shortName'], etf['symbol']), 'price': float(etf['last'].replace(',','').replace("%", "")), 'change': change}
     except:
         return {'symbol': '', 'price': 0, 'change': float('0.00')}
 
-def getTickerForName(name):
+def getTickerForName(name, symbol):
     if name == 'GOLD':
         name = 'GC'
     if name == 'OIL':
@@ -133,6 +171,10 @@ def getTickerForName(name):
         name = 'NQ'
     if name == 'RUS2K FUT':
         name = 'RTY'
+    if name == 'VIX Index':
+        name = symbol.replace("@", "")
+    if name == 'USD INDEX':
+        name = symbol.replace(".", "")
     name = name.replace('/USD', '')
     name = name.replace('USD', '')
     return name
@@ -203,7 +245,7 @@ def createWattSpan(value, text):
     st.markdown(f"<p style='text-align: center; font-famlily: Arial Rounded MT Bold'><span style='font-size: 18px'>{text}</style></span><br><span style='font-size: 36px; color: {color}'>{value}</span></p>", unsafe_allow_html=True)
     
 
-def rederAreaChart(dataf, cookie):
+def rederAreaChart(cookie):
     dfSheely1 = getArraysForAreaChart('selly1_power', cookie)
     dfSheely2 = getArraysForAreaChart('selly2_power', cookie)
     dfSheely1['Value2'] = dfSheely2['Value'].to_numpy()
@@ -228,6 +270,14 @@ def createChart(dataf, title, width=640, height=449, titleColor="rgb(255,255,255
 
 def createChartEconomy(dataf, title, width=640, height=449, titleColor="rgb(255,255,255)", titleFonteSize=25, yFormat='$'):
     fig = px.line(dataf, x="time", y="close", title=title, width=width, height=height)
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=0), paper_bgcolor="rgb(0,0,0)", title_font_family='Arial Rounded MT Bold', plot_bgcolor="rgb(0,0,0)", font_color="rgb(255,255,255)", title_font_color=titleColor,  xaxis=dict(showgrid=False, linecolor="rgba(255,255,255, 0.5)", showline=True, tickfont = dict(size=14)), yaxis=dict(showgrid=True, showline=True, linecolor="rgba(255,255,255, 0.5)", gridcolor="rgba(255,255,255, 0.2)", tickfont = dict(size=14)), yaxis_tickformat = yFormat, font_family="Arial Rounded MT Bold", yaxis_title=None, xaxis_title=None, xaxis_tickformat = '%b-%Y', title_font_size=titleFonteSize, title={'text': title,'y':0.94,'x':0.5,'xanchor': 'center','yanchor': 'top'})
+    fig.data[0].line.color = "#d76c21"
+    fig.data[0].line.width = 2
+    st.plotly_chart(fig)
+
+
+def createChartEconomy2(dataf, title, width=640, height=449, titleColor="rgb(255,255,255)", titleFonteSize=25, yFormat='$'):
+    fig = px.line(dataf, x="time", y=['close_x', 'close_y'], title=title, width=width, height=height)
     fig.update_layout(margin=dict(l=10, r=10, t=50, b=0), paper_bgcolor="rgb(0,0,0)", title_font_family='Arial Rounded MT Bold', plot_bgcolor="rgb(0,0,0)", font_color="rgb(255,255,255)", title_font_color=titleColor,  xaxis=dict(showgrid=False, linecolor="rgba(255,255,255, 0.5)", showline=True, tickfont = dict(size=14)), yaxis=dict(showgrid=True, showline=True, linecolor="rgba(255,255,255, 0.5)", gridcolor="rgba(255,255,255, 0.2)", tickfont = dict(size=14)), yaxis_tickformat = yFormat, font_family="Arial Rounded MT Bold", yaxis_title=None, xaxis_title=None, xaxis_tickformat = '%b-%Y', title_font_size=titleFonteSize, title={'text': title,'y':0.94,'x':0.5,'xanchor': 'center','yanchor': 'top'})
     fig.data[0].line.color = "#d76c21"
     fig.data[0].line.width = 2

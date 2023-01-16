@@ -87,10 +87,10 @@ def insertGauges():
 
 
 def insertCanvasForTikers(tickerArray):
-    vix1 = [x for x in tickerArray if x["symbol"] == 'VX.1' ][0]
-    vix2 = [x for x in tickerArray if x["symbol"] == 'VX.2' ][0]
-    vix3 = [x for x in tickerArray if x["symbol"] == 'VX.3' ][0]
-    fedFundRateValue = getFredDataHistory('DFF', 1)['close'][0]
+    try:
+        fedFundRateValue = getFredDataHistory('DFF', 1)['close'][0]
+    except:
+        fedFundRateValue = 0
     fedFundRate = [{'symbol': 'FUND-RATE', 'price': fedFundRateValue, 'change': ''}]
     qqqTicker = 'QQQ'
     iwmTicker = 'IWM'

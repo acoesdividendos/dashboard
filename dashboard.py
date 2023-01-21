@@ -14,7 +14,7 @@ from streamlit_autorefresh import st_autorefresh
 fred = Fred(api_key='6d08d5b6749aad4b7ae0e4c1dcfca79c')
 
 
-influxCoockie = '_pk_id.1.5336=b71512efe30a90c0.1671653720.; _pk_ses.1.5336=1; grafana_session=447786de724042161f11d364216bd5f8'
+influxCoockie = '_pk_id.1.5336=ed6cf3ec48bfd1c5.1670520315.; _pk_ses.1.5336=1; grafana_session=a4bc6a97aadf000d67beb72c4f6063ec'
 helper.setPageConfig()
 col1, col2, col3, col4, col5, col6, col7, col8, col9= st.columns([4, 4, 4, 4, 4, 3, 3, 3, 3], gap='medium')
 col10, col11, col12, col13 = st.columns([5, 5, 3, 2])

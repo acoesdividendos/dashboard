@@ -218,11 +218,18 @@ def getInlfuxQuery(query, cookie):
     timeForQuery = round((seconds_since_epoch * 1000) - 18000 * 1000)
     url = 'http://192.168.0.15:3000/api/datasources/proxy/1/query?db=influx&q=' + query + '%20%3E%3D%20' + str(timeForQuery) + 'ms&epoch=ms'
     response = requests.get(url, headers={'Cookie': cookie}).json()
-    value = response['results'][0]['series'][0]['values'][len(response['results'][0]['series'][0]['values']) - 1][1]
-    if not value:
-        value = response['results'][0]['series'][0]['values'][len(response['results'][0]['series'][0]['values']) - 2][1]
-    return value
+    if 'results' in response.keys():
+        value = response['results'][0]['series'][0]['values'][len(response['results'][0]['series'][0]['values']) - 1][1]
+        if not value:
+            value = response['results'][0]['series'][0]['values'][len(response['results'][0]['series'][0]['values']) - 2][1]
+        return value
+    else:
+        return response
 
+def loginGrafana():
+    url = 'http://192.168.0.15:3000/login'
+    response = requests.post(url, json={"user":"admin","password":"ËS´Q9H¿£'<xpóË@t;Õõ_"}).headers['Set-Cookie']
+    return response
 
 def getPrometheusQuery(query, cookie):
     endTime = datetime.datetime.now().timestamp()

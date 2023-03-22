@@ -34,11 +34,15 @@ def getPricesForCanvas():
 
 
 def clockAndWeather():
+    global influxCoockie
     fontSize = '27px'
     date_time = datetime.datetime.now().strftime("%d-%m %H:%M:%S")
     date,time = date_time.split()
     queryWeather = 'SELECT%20mean(%22temperature%22)%20FROM%20%22weather%22%20WHERE%20time'
     lastTemp = helper.getInlfuxQuery(queryWeather, influxCoockie)
+    if lastTemp['message'] and lastTemp['message'] == 'Unauthorized':
+        influxCoockie = helper.loginGrafana()
+        lastTemp = helper.getInlfuxQuery(queryWeather, influxCoockie)
     queryUpTime = 'node_time_seconds%7Binstance%3D%22node_exporter%3A9100%22%2Cjob%3D%22node_exporter%22%7D+-+node_boot_time_seconds%7Binstance%3D%22node_exporter%3A9100%22%2Cjob%3D%22node_exporter%22%7D'
     upTime = helper.getPrometheusQuery(queryUpTime, influxCoockie)
     upTime = '{:0,.2f} days'.format(float(upTime / 3600 / 24))
